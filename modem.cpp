@@ -1,5 +1,6 @@
 #include "modem.h"
 #include "config.h"
+#include "http_wrapper.h"
 
 TinyGsm modem(Serial1);
 
@@ -8,6 +9,8 @@ TinyGsmClient httpGsmClient(modem, 2);
 
 PubSubClient mqttClient(mqttGsmClient);
 HttpClient httpClient(httpGsmClient, HTTP_SERVER, HTTP_PORT);
+
+HttpWrapper http(httpGsmClient);
 
 void reconnectModem() {
   Serial.println("Connecting modem...");
@@ -19,13 +22,13 @@ void reconnectModem() {
 
   if (!modem.waitForNetwork()) {
     Serial.println("Network connection failed. Retrying...");
-    delay(5000);
+    delay(2000);
     reconnectModem();
   }
 
   if (!modem.gprsConnect(APN, USER, PASS)) {
     Serial.println("GPRS connection failed. Retrying...");
-    delay(5000);
+    delay(2000);
     reconnectModem();
   }
 
@@ -40,7 +43,7 @@ void reconnectMqtt() {
     } else {
       Serial.print("Failed, rc=");
       Serial.println(mqttClient.state());
-      delay(5000);
+      delay(2000);
     }
   }
 }
@@ -53,7 +56,7 @@ void modemSetup() {
   mqttClient.setKeepAlive(120);
   reconnectMqtt();
 
-  httpClient.setTimeout(10);
+  httpClient.setTimeout(HTTP_TIMEOUT);
 
   Serial.println("Modem and network initialized.");
 }
@@ -81,17 +84,10 @@ void publishUidMqtt(const String& uid) {
 void sendUidHttp(const String& uid) {
   ensureModemAndMqtt();
 
-  String url = "/store_uid?uid=" + uid;
-  int err = httpClient.get(url);
-  if (err != 0) {
-    Serial.println("HTTP request failed!");
-    return;
-  }
+  String url = "/api/v1/iot/trip/123123123/rfid-scan";
+  String jsonBody = "{\"nik\":\"" + uid + "\", \"scan_type\": 0}";
+
+  http.post(url, jsonBody);
 
   mqttClient.loop();
-
-  Serial.print("HTTP status: ");
-  Serial.println(httpClient.responseStatusCode());
-  Serial.println("Response: " + httpClient.responseBody());
-  httpClient.stop();
 }

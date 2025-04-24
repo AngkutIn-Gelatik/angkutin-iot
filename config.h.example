@@ -22,5 +22,6 @@
 
 #define HTTP_SERVER ""
 #define HTTP_PORT 
+#define HTTP_TIMEOUT 
 
 #endif
