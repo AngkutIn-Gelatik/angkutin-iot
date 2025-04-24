@@ -1,6 +1,7 @@
 #include "modem.h"
 #include "config.h"
 #include "http_wrapper.h"
+#include "uid_manager.h"
 
 TinyGsm modem(Serial1);
 
@@ -11,6 +12,8 @@ PubSubClient mqttClient(mqttGsmClient);
 HttpClient httpClient(httpGsmClient, HTTP_SERVER, HTTP_PORT);
 
 HttpWrapper http(httpGsmClient);
+
+UidManager uidManager(20);
 
 void reconnectModem() {
   Serial.println("Connecting modem...");
@@ -83,9 +86,17 @@ void publishUidMqtt(const String& uid) {
 
 void sendUidHttp(const String& uid) {
   ensureModemAndMqtt();
+  int scanType = 0;
+
+  if (uidManager.exists(uid)) {
+    uidManager.remove(uid);
+    scanType = 1;
+  } else {
+    uidManager.add(uid);
+  }
 
   String url = "/api/v1/iot/trip/123123123/rfid-scan";
-  String jsonBody = "{\"nik\":\"" + uid + "\", \"scan_type\": 0}";
+  String jsonBody = "{\"nik\":\"" + uid + "\", \"scan_type\": " + scanType + "}";
 
   String responseBody;
   int statusCode = http.post(url, jsonBody, responseBody);
@@ -93,6 +104,8 @@ void sendUidHttp(const String& uid) {
 
   Serial.println("Status: " + parsedStatusCode);
   Serial.println("Request Body: " + responseBody);
+  Serial.println("Card Storage Status");
+  uidManager.printAll();
 
   mqttClient.loop();
 }
