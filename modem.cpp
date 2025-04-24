@@ -87,7 +87,12 @@ void sendUidHttp(const String& uid) {
   String url = "/api/v1/iot/trip/123123123/rfid-scan";
   String jsonBody = "{\"nik\":\"" + uid + "\", \"scan_type\": 0}";
 
-  http.post(url, jsonBody);
+  String responseBody;
+  int statusCode = http.post(url, jsonBody, responseBody);
+  String parsedStatusCode = String(statusCode);
+
+  Serial.println("Status: " + parsedStatusCode);
+  Serial.println("Request Body: " + responseBody);
 
   mqttClient.loop();
 }

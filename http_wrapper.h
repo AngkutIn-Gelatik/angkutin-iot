@@ -7,7 +7,7 @@
 class HttpWrapper {
 public:
   HttpWrapper(TinyGsmClient& client);
-  void post(const String& url, const String& jsonBody);
+  int post(const String& url, const String& jsonBody, String& responseBody);
 
 private:
   TinyGsmClient& _client;
