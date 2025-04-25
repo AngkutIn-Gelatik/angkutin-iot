@@ -1,5 +1,5 @@
 #ifndef MODEM_H
-#define TINY_GSM_MODEM_SIM900
+#define TINY_GSM_MODEM_SIM800
 #define MODEM_H
 
 #include <TinyGsmClient.h>

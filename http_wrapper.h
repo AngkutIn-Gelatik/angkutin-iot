@@ -1,5 +1,5 @@
 #ifndef HTTP_WRAPPER_H
-#define TINY_GSM_MODEM_SIM900
+#define TINY_GSM_MODEM_SIM800
 #define HTTP_WRAPPER_H
 
 #include <TinyGsmClient.h>

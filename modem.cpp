@@ -2,6 +2,7 @@
 #include "config.h"
 #include "http_wrapper.h"
 #include "uid_manager.h"
+#include "utils.h"
 
 TinyGsm modem(Serial1);
 
@@ -16,36 +17,39 @@ HttpWrapper http(httpGsmClient);
 UidManager uidManager(20);
 
 void reconnectModem() {
-  Serial.println("Connecting modem...");
+  turnLight(true);
+  infoIndicator("Connecting modem...");
 
   if (!modem.testAT()) {
-    Serial.println("Modem unresponsive. Restarting...");
+    errorIndicator("Modem unresponsive. Restarting...", true);
     modem.restart();
   }
 
   if (!modem.waitForNetwork()) {
-    Serial.println("Network connection failed. Retrying...");
+    errorIndicator("Network connection failed. Retrying...", true);
     delay(2000);
     reconnectModem();
   }
 
   if (!modem.gprsConnect(APN, USER, PASS)) {
-    Serial.println("GPRS connection failed. Retrying...");
+    errorIndicator("GPRS connection failed. Retrying...", true);
     delay(2000);
     reconnectModem();
   }
 
-  Serial.println("Modem connected successfully.");
+  infoIndicator("Modem connected successfully.");
+  turnLight(false);
 }
 
 void reconnectMqtt() {
   while (!mqttClient.connected()) {
-    Serial.println("Connecting to MQTT...");
+    turnLight(true);
+    infoIndicator("Connecting to MQTT...");
     if (mqttClient.connect(MQTT_CLIENT_ID, MQTT_USER, MQTT_PASS)) {
-      Serial.println("Connected to MQTT!");
+      infoIndicator("Connected to MQTT!");
+      turnLight(false);
     } else {
-      Serial.print("Failed, rc=");
-      Serial.println(mqttClient.state());
+      errorIndicator("Failed, rc=" + mqttClient.state(), true);
       delay(2000);
     }
   }
@@ -61,12 +65,12 @@ void modemSetup() {
 
   httpClient.setTimeout(HTTP_TIMEOUT);
 
-  Serial.println("Modem and network initialized.");
+  infoIndicator("Modem and network initialized.", true, true);
 }
 
 void ensureModemAndMqtt() {
   if (!modem.isGprsConnected()) {
-    Serial.println("GPRS disconnected, attempting to reconnect...");
+    errorIndicator("GPRS disconnected, attempting to reconnect...", true);
     reconnectModem();
   }
 
@@ -78,9 +82,9 @@ void ensureModemAndMqtt() {
 void publishUidMqtt(const String& uid) {
   ensureModemAndMqtt();
   if (mqttClient.publish(MQTT_TOPIC, uid.c_str())) {
-    Serial.println("UID sent via MQTT!");
+    infoIndicator("UID sent via MQTT!");
   } else {
-    Serial.println("Failed to send UID via MQTT.");
+    errorIndicator("Failed to send UID via MQTT.");
   }
 }
 
@@ -102,10 +106,16 @@ void sendUidHttp(const String& uid) {
   int statusCode = http.post(url, jsonBody, responseBody);
   String parsedStatusCode = String(statusCode);
 
-  Serial.println("Status: " + parsedStatusCode);
+  infoIndicator("Status: " + parsedStatusCode);
   Serial.println("Request Body: " + responseBody);
   Serial.println("Card Storage Status");
   uidManager.printAll();
+
+  if (statusCode == 204) {
+    infoIndicator("Succesfully sent uid to server", true, true);
+  } else {
+    errorIndicator("Failed to sent data to server", true);
+  }
 
   mqttClient.loop();
 }
