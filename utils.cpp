@@ -17,9 +17,9 @@ void setupIndicators(int ledPin, int buzzerPin) {
 void blinkLED(uint8_t r, uint8_t g, uint8_t b, int times) {
   for (int i = 0; i < times; ++i) {
     neopixelWrite(ledPin_, r, g, b);
-    delay(100);
+    delay(200);
     neopixelWrite(ledPin_, 0, 0, 0);
-    delay(100);
+    delay(200);
   }
 }
 
@@ -31,10 +31,18 @@ void turnLight(bool status) {
   }
 }
 
+void setupLight(bool status) {
+  if (status) {
+    neopixelWrite(ledPin_, 255, 255, 0);
+  } else {
+    neopixelWrite(ledPin_, 0, 0, 0);
+  }
+}
+
 void buzz(int times) {
   for (int i = 0; i < times; ++i) {
     tone(buzzerPin_, 1000, 100);
-    delay(150);
+    delay(200);
   }
 }
 

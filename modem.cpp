@@ -1,3 +1,4 @@
+#include "Arduino.h"
 #include "modem.h"
 #include "config.h"
 #include "http_wrapper.h"
@@ -17,7 +18,7 @@ HttpWrapper http(httpGsmClient);
 UidManager uidManager(20);
 
 void reconnectModem() {
-  turnLight(true);
+  setupLight(true);
   infoIndicator("Connecting modem...");
 
   if (!modem.testAT()) {
@@ -38,21 +39,21 @@ void reconnectModem() {
   }
 
   infoIndicator("Modem connected successfully.");
-  turnLight(false);
+  setupLight(false);
 }
 
 void reconnectMqtt() {
+  setupLight(true);
   while (!mqttClient.connected()) {
-    turnLight(true);
     infoIndicator("Connecting to MQTT...");
     if (mqttClient.connect(MQTT_CLIENT_ID, MQTT_USER, MQTT_PASS)) {
       infoIndicator("Connected to MQTT!");
-      turnLight(false);
     } else {
       errorIndicator("Failed, rc=" + mqttClient.state(), true);
       delay(2000);
     }
   }
+  setupLight(false);
 }
 
 void modemSetup() {
@@ -80,16 +81,19 @@ void ensureModemAndMqtt() {
 }
 
 void publishUidMqtt(const String& uid) {
+  turnLight(true);
   ensureModemAndMqtt();
   if (mqttClient.publish(MQTT_TOPIC, uid.c_str())) {
     infoIndicator("UID sent via MQTT!");
   } else {
     errorIndicator("Failed to send UID via MQTT.");
   }
+  turnLight(false);
 }
 
 void sendUidHttp(const String& uid) {
   ensureModemAndMqtt();
+  turnLight(true);
   int scanType = 0;
 
   if (uidManager.exists(uid)) {
@@ -107,8 +111,8 @@ void sendUidHttp(const String& uid) {
   String parsedStatusCode = String(statusCode);
 
   infoIndicator("Status: " + parsedStatusCode);
-  Serial.println("Request Body: " + responseBody);
-  Serial.println("Card Storage Status");
+  infoIndicator("Request Body: " + responseBody);
+  infoIndicator("Card Storage Status");
   uidManager.printAll();
 
   if (statusCode == 204) {
@@ -117,5 +121,6 @@ void sendUidHttp(const String& uid) {
     errorIndicator("Failed to sent data to server", true);
   }
 
+  turnLight(false);
   mqttClient.loop();
 }

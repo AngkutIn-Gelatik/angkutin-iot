@@ -1,4 +1,5 @@
 #include "uid_manager.h"
+#include "utils.h"
 
 UidManager::UidManager(int maxUids) {
   _maxUids = maxUids;
@@ -8,24 +9,24 @@ UidManager::UidManager(int maxUids) {
 
 bool UidManager::add(const String& uid) {
   if (_count >= _maxUids) {
-    Serial.println("UID list full. Cannot add more.");
+    errorIndicator("UID list full. Cannot add more.", true);
     return false;
   }
 
   if (exists(uid)) {
-    Serial.println("UID already scanned.");
+    errorIndicator("UID already scanned.", true);
     return false;
   }
 
   _uids[_count++] = uid;
-  Serial.println("UID added: " + uid);
+  infoIndicator("UID added: " + uid);
   return true;
 }
 
 bool UidManager::remove(const String& uid) {
   int index = findIndex(uid);
   if (index == -1) {
-    Serial.println("UID not found. Cannot remove.");
+    errorIndicator("UID not found. Cannot remove.");
     return false;
   }
 
@@ -35,7 +36,7 @@ bool UidManager::remove(const String& uid) {
 
   _count--;
   _uids[_count] = "";
-  Serial.println("UID removed: " + uid);
+  infoIndicator("UID removed: " + uid);
   return true;
 }
 
@@ -53,9 +54,9 @@ int UidManager::findIndex(const String& uid) const {
 }
 
 void UidManager::printAll() const {
-  Serial.println("Scanned UIDs:");
+  infoIndicator("Scanned UIDs:");
   for (int i = 0; i < _count; ++i) {
-    Serial.println("[" + String(i) + "] " + _uids[i]);
+    infoIndicator("[" + String(i) + "] " + _uids[i]);
   }
 }
 
