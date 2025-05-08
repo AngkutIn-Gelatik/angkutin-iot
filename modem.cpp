@@ -84,9 +84,7 @@ void ensureModemAndMqtt() {
 void publishGpsMqtt(const String& coor) {
   ensureModemAndMqtt();
   String topic = String(MQTT_TOPIC) + "/" + String(VEHICLE_ID);
-  if (mqttClient.publish(topic.c_str(), coor.c_str())) {
-    infoIndicator("Coordinate sent via MQTT!");
-  } else {
+  if (!mqttClient.publish(topic.c_str(), coor.c_str())) {
     errorIndicator("Failed to send Coordinate via MQTT.");
   }
 }

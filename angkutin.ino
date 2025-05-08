@@ -31,16 +31,24 @@ void setup() {
   setupLight(false);
 }
 
+unsigned long lastGpsCheck = 0;
+const unsigned long gpsInterval = 2000;
+
 void loop() {
   mqttClient.loop();
 
-  Coordinate coord = GPSModule::getCoordinate();
-  if (coord.valid) {
-    String coor = "{\"lat\": \"" + String(coord.latitude, 6) + "\",\n\"long\": \"" + String(coord.longitude, 6) + "\"}";
+  if (millis() - lastGpsCheck >= gpsInterval) {
+    lastGpsCheck = millis();
 
-    publishGpsMqtt(coor);
-  } else {
-    Serial.println("Failed to get valid GPS coordinates.");
+    Coordinate coord = GPSModule::getCoordinate();
+    if (coord.valid) {
+      String coor = "{\"lat\": \"" + String(coord.latitude, 6) + 
+                    "\",\n\"long\": \"" + String(coord.longitude, 6) + "\"}";
+
+      publishGpsMqtt(coor);
+    } else {
+      errorIndicator("Failed to get valid GPS coordinates.");
+    }
   }
 
   if (rfidAvailable()) {
@@ -50,9 +58,9 @@ void loop() {
 
     while (!sendUidHttp(tripId, uid)) {
       delay(500);
-    };
+    }
 
     turnLight(false);
+    delay(1000);
   }
-  delay(2000);
 }
