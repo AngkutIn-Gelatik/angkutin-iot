@@ -81,15 +81,14 @@ void ensureModemAndMqtt() {
   }
 }
 
-void publishUidMqtt(const String& tripId, const String& uid) {
-  turnLight(true);
+void publishGpsMqtt(const String& coor) {
   ensureModemAndMqtt();
-  if (mqttClient.publish(MQTT_TOPIC, uid.c_str())) {
-    infoIndicator("UID sent via MQTT!");
+  String topic = String(MQTT_TOPIC) + "/" + String(VEHICLE_ID);
+  if (mqttClient.publish(topic.c_str(), coor.c_str())) {
+    infoIndicator("Coordinate sent via MQTT!");
   } else {
-    errorIndicator("Failed to send UID via MQTT.");
+    errorIndicator("Failed to send Coordinate via MQTT.");
   }
-  turnLight(false);
 }
 
 String sendDriverUid(const String& uid) {

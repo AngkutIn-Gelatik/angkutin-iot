@@ -3,6 +3,7 @@
 #include "config.h"
 #include "utils.h"
 #include "angkot.h"
+#include "gps_module.h"
 
 String tripId;
 
@@ -20,10 +21,12 @@ void setup() {
   modemSetup();
   rfidInit();
 
-  while(tripId == "") {
+  while (tripId == "") {
     tripId = setupDriver();
   }
-  
+
+  GPSModule::begin();
+
   infoIndicator("Scan RFID to send data...");
   setupLight(false);
 }
@@ -31,17 +34,25 @@ void setup() {
 void loop() {
   mqttClient.loop();
 
+  Coordinate coord = GPSModule::getCoordinate();
+  if (coord.valid) {
+    String coor = "{\"lat\": \"" + String(coord.latitude, 6) + "\",\n\"long\": \"" + String(coord.longitude, 6) + "\"}";
+
+    publishGpsMqtt(coor);
+  } else {
+    Serial.println("Failed to get valid GPS coordinates.");
+  }
+
   if (rfidAvailable()) {
     turnLight(true);
     String uid = rfidGetUid();
     infoIndicator("UID: " + uid);
 
-    publishUidMqtt(tripId, uid);
     while (!sendUidHttp(tripId, uid)) {
       delay(500);
     };
 
     turnLight(false);
-    delay(2000);
   }
+  delay(2000);
 }

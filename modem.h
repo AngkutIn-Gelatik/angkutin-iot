@@ -18,6 +18,6 @@ void modemSetup();
 void mqttReconnect();
 String sendDriverUid(const String& uid);
 bool sendUidHttp(const String& tripId, const String& uid);
-void publishUidMqtt(const String& tripId, const String& uid);
+void publishGpsMqtt(const String& coor);
 
 #endif
