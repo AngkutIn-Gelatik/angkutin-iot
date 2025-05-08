@@ -104,14 +104,8 @@ String sendDriverUid(const String& uid) {
   String parsedStatusCode = String(statusCode);
 
   infoIndicator("Status: " + parsedStatusCode);
-  infoIndicator("Request Body: " + responseBody);
+  infoIndicator("Response Body: " + responseBody);
   infoIndicator("Card Storage Status");
-
-  if (statusCode == 201) {
-    infoIndicator("Succesfully sent driver id to server", true, true);
-  } else {
-    errorIndicator("Failed to sent driver id to server", true);
-  }
 
   StaticJsonDocument<200> doc;
   DeserializationError error = deserializeJson(doc, responseBody);
@@ -127,19 +121,25 @@ String sendDriverUid(const String& uid) {
   turnLight(false);
   mqttClient.loop();
 
-  return trip_id;
+  if (statusCode == 201) {
+    infoIndicator("Succesfully sent driver id to server", true, true);
+    return trip_id;
+  }
+
+  errorIndicator("Failed to sent driver id to server", true);
+  return "";
 }
 
-void sendUidHttp(const String& tripId, const String& uid) {
+bool sendUidHttp(const String& tripId, const String& uid) {
   ensureModemAndMqtt();
   turnLight(true);
   int scanType = 0;
 
   if (uidManager.exists(uid)) {
-    uidManager.remove(uid);
     scanType = 1;
+    infoIndicator("Penumpang turun");
   } else {
-    uidManager.add(uid);
+    infoIndicator("Penumpang naik");
   }
 
   String url = "/api/v1/iot/trip/" + tripId + "/rfid-scan";
@@ -152,14 +152,26 @@ void sendUidHttp(const String& tripId, const String& uid) {
   infoIndicator("Status: " + parsedStatusCode);
   infoIndicator("Request Body: " + responseBody);
   infoIndicator("Card Storage Status");
-  uidManager.printAll();
-
-  if (statusCode == 204) {
-    infoIndicator("Succesfully sent uid to server", true, true);
-  } else {
-    errorIndicator("Failed to sent data to server", true);
-  }
 
   turnLight(false);
   mqttClient.loop();
+
+  if (statusCode == 204) {
+    infoIndicator("Succesfully sent uid to server", true, true);
+    if (uidManager.exists(uid)) {
+      uidManager.remove(uid);
+    } else {
+      uidManager.add(uid);
+    }
+
+    uidManager.printAll();
+    return true;
+  } else if (statusCode == 500) {
+    errorIndicator("Failed to sent data to server (500)", true);
+    return true;
+  }
+
+
+  errorIndicator("Failed to sent data to server", true);
+  return false;
 }

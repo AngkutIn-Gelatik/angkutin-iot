@@ -37,7 +37,9 @@ void loop() {
     infoIndicator("UID: " + uid);
 
     publishUidMqtt(tripId, uid);
-    sendUidHttp(tripId, uid);
+    while (!sendUidHttp(tripId, uid)) {
+      delay(500);
+    };
 
     turnLight(false);
     delay(2000);
