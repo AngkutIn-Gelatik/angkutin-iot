@@ -7,13 +7,13 @@
 #include "rfid.h"
 
 String driverUid;
-String tripId;
+String tripIdResponse;
 
 String setupDriver() {
   infoIndicator("Tap RFID to setup driver", true, true);
   bool lightOn = false;
 
-  while (driverUid == "" || tripId == "") {
+  while (driverUid == "" || tripIdResponse == "") {
     lightOn = !lightOn;
     turnLight(lightOn);
 
@@ -21,11 +21,7 @@ String setupDriver() {
       String uid = rfidGetUid();
       infoIndicator("Driver UID: " + uid);
 
-      publishUidMqtt(uid);
-      sendUidHttp(uid);
-
-      driverUid = uid;
-      tripId = "123123123";
+      tripIdResponse = sendDriverUid(uid);
 
       turnLight(false);
       delay(2000);
@@ -35,5 +31,5 @@ String setupDriver() {
     delay(500);
   }
 
-  return tripId;
+  return tripIdResponse;
 }

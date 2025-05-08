@@ -4,6 +4,8 @@
 #include "utils.h"
 #include "angkot.h"
 
+String tripId;
+
 void setup() {
   Serial.begin(115200);
   while (!Serial)
@@ -18,7 +20,10 @@ void setup() {
   modemSetup();
   rfidInit();
 
-  String tripId = setupDriver();
+  while(tripId == "") {
+    tripId = setupDriver();
+  }
+  
   infoIndicator("Scan RFID to send data...");
   setupLight(false);
 }
@@ -31,8 +36,8 @@ void loop() {
     String uid = rfidGetUid();
     infoIndicator("UID: " + uid);
 
-    publishUidMqtt(uid);
-    sendUidHttp(uid);
+    publishUidMqtt(tripId, uid);
+    sendUidHttp(tripId, uid);
 
     turnLight(false);
     delay(2000);

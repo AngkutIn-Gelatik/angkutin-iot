@@ -16,7 +16,8 @@ extern HttpClient httpClient;
 
 void modemSetup();
 void mqttReconnect();
-void sendUidHttp(const String& uid);
-void publishUidMqtt(const String& uid);
+String sendDriverUid(const String& uid);
+void sendUidHttp(const String& tripId, const String& uid);
+void publishUidMqtt(const String& tripId, const String& uid);
 
 #endif

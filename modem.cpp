@@ -4,6 +4,7 @@
 #include "http_wrapper.h"
 #include "uid_manager.h"
 #include "utils.h"
+#include <ArduinoJson.h>
 
 TinyGsm modem(Serial1);
 
@@ -80,7 +81,7 @@ void ensureModemAndMqtt() {
   }
 }
 
-void publishUidMqtt(const String& uid) {
+void publishUidMqtt(const String& tripId, const String& uid) {
   turnLight(true);
   ensureModemAndMqtt();
   if (mqttClient.publish(MQTT_TOPIC, uid.c_str())) {
@@ -91,7 +92,45 @@ void publishUidMqtt(const String& uid) {
   turnLight(false);
 }
 
-void sendUidHttp(const String& uid) {
+String sendDriverUid(const String& uid) {
+  ensureModemAndMqtt();
+  turnLight(true);
+
+  String url = "/api/v1/iot/trip";
+  String jsonBody = "{\"driver_id\":\"" + uid + "\", \"vehicle_id\": \"" + VEHICLE_ID + "\"}";
+
+  String responseBody;
+  int statusCode = http.post(url, jsonBody, responseBody);
+  String parsedStatusCode = String(statusCode);
+
+  infoIndicator("Status: " + parsedStatusCode);
+  infoIndicator("Request Body: " + responseBody);
+  infoIndicator("Card Storage Status");
+
+  if (statusCode == 201) {
+    infoIndicator("Succesfully sent driver id to server", true, true);
+  } else {
+    errorIndicator("Failed to sent driver id to server", true);
+  }
+
+  StaticJsonDocument<200> doc;
+  DeserializationError error = deserializeJson(doc, responseBody);
+
+  if (error) {
+    Serial.print("JSON parsing failed: ");
+    Serial.println(error.c_str());
+    return "";
+  }
+
+  const char* trip_id = doc["trip_id"];
+
+  turnLight(false);
+  mqttClient.loop();
+
+  return trip_id;
+}
+
+void sendUidHttp(const String& tripId, const String& uid) {
   ensureModemAndMqtt();
   turnLight(true);
   int scanType = 0;
@@ -103,7 +142,7 @@ void sendUidHttp(const String& uid) {
     uidManager.add(uid);
   }
 
-  String url = "/api/v1/iot/trip/123123123/rfid-scan";
+  String url = "/api/v1/iot/trip/" + tripId + "/rfid-scan";
   String jsonBody = "{\"nik\":\"" + uid + "\", \"scan_type\": " + scanType + "}";
 
   String responseBody;
